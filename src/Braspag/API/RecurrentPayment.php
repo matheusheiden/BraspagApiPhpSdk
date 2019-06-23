@@ -98,7 +98,7 @@ class RecurrentPayment implements \JsonSerializable
         return $this->reasonMessage;
     }
 
-    public function gerNextRecurrency()
+    public function getNextRecurrency()
     {
         return $this->nextRecurrency;
     }

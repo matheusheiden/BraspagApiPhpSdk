@@ -8,7 +8,7 @@ class Payment implements \JsonSerializable
 
     const PAYMENTTYPE_DEBITCARD = 'DebitCard';
 
-    const PAYMENTTYPE_ELECTRONIC_TRANSFER = 'ElectronicTransfer';
+    const PAYMENTTYPE_ELECTRONIC_TRANSFER = 'EletronicTransfer';
 
     const PAYMENTTYPE_BOLETO = 'Boleto';
 
@@ -94,6 +94,12 @@ class Payment implements \JsonSerializable
 
     private $address;
 
+    private $externalAuthentication;
+
+    private $fraudAnalysis;
+
+    private $velocityAnalysis;
+
     public function __construct($amount = 0, $installments = 1)
     {
         $this->setAmount($amount);
@@ -107,7 +113,6 @@ class Payment implements \JsonSerializable
 
     public function populate(\stdClass $data)
     {
-
         $this->serviceTaxAmount = isset($data->ServiceTaxAmount)? $data->ServiceTaxAmount: null;
         $this->installments = isset($data->Installments)? $data->Installments: null;
         $this->interest = isset($data->Interest)? $data->Interest: null;
@@ -118,6 +123,11 @@ class Payment implements \JsonSerializable
         if (isset($data->RecurrentPayment)) {
             $this->recurrentPayment = new RecurrentPayment(false);
             $this->recurrentPayment->populate($data->RecurrentPayment);
+        }
+
+        if (isset($data->FraudAnalysis)) {
+            $this->fraudAnalysis = new FraudAnalysis();
+            $this->fraudAnalysis->populate($data->FraudAnalysis);
         }
 
         if (isset($data->CreditCard)) {
@@ -159,6 +169,56 @@ class Payment implements \JsonSerializable
 
         $this->links = isset($data->Links)? $data->Links: [];
         $this->extraDataCollection = isset($data->ExtraDataCollection)? $data->ExtraDataCollection: [];
+        $this->externalAuthentication = isset($data->ExternalAuthentication) ? $data->ExternalAuthentication : null;
+        $this->velocityAnalysis = $data->VelocityAnalysis ?? null;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getReasonMessage()
+    {
+        return $this->reasonMessage;
+    }
+
+    /**
+     * @param mixed $reasonMessage
+     */
+    public function setReasonMessage($reasonMessage)
+    {
+        $this->reasonMessage = $reasonMessage;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getVelocityAnalysis()
+    {
+        return $this->velocityAnalysis;
+    }
+
+    /**
+     * @param mixed $velocityAnalysis
+     */
+    public function setVelocityAnalysis($velocityAnalysis)
+    {
+        $this->velocityAnalysis = $velocityAnalysis;
+    }
+
+    /**
+     * @return FraudAnalysis
+     */
+    public function getFraudAnalysis()
+    {
+        return $this->fraudAnalysis;
+    }
+
+    /**
+     * @param mixed $fraudAnalysis
+     */
+    public function setFraudAnalysis($fraudAnalysis)
+    {
+        $this->fraudAnalysis = $fraudAnalysis;
     }
 
     public static function fromJson($json)
@@ -205,6 +265,15 @@ class Payment implements \JsonSerializable
         $this->setRecurrentPayment($recurrentPayment);
 
         return $recurrentPayment;
+    }
+
+    public function fraudAnalysis()
+    {
+        $fraudAnalysis = new FraudAnalysis();
+
+        $this->setFraudAnalysis($fraudAnalysis);
+
+        return $fraudAnalysis;
     }
 
     public function getServiceTaxAmount()
@@ -618,5 +687,15 @@ class Payment implements \JsonSerializable
     {
         $this->address = $address;
         return $this;
+    }
+
+    public function setExternalAuthentication($data)
+    {
+        $this->externalAuthentication = $data;
+        return $this;
+    }
+    public function getExternalAuthentication()
+    {
+        return $this->externalAuthentication;
     }
 }

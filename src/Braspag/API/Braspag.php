@@ -2,7 +2,11 @@
 namespace Braspag\API;
 
 use Braspag\API\Merchant;
+use Braspag\API\Request\BraspagRequestException;
 use Braspag\API\Request\CreateSaleRequest;
+use Braspag\API\Request\FraudAnalysisRequest;
+use Braspag\API\Request\FraudAnalysisTokenRequest;
+use Braspag\API\Request\QueryFraudAnalysis;
 use Braspag\API\Request\QuerySaleRequest;
 use Braspag\API\Request\UpdateSaleRequest;
 use Braspag\API\Request\QueryRecurrentPaymentRequest;
@@ -12,9 +16,19 @@ use Braspag\API\Request\QueryRecurrentPaymentRequest;
  */
 class Braspag
 {
+    /**
+     * @var Client
+     */
+    private $client;
 
+    /**
+     * @var \Braspag\API\Merchant
+     */
     private $merchant;
 
+    /**
+     * @var Environment
+     */
     private $environment;
 
     /**
@@ -29,7 +43,7 @@ class Braspag
      *            The environment: {@link Environment::production()} or
      *            {@link Environment::sandbox()}
      */
-    public function __construct(Merchant $merchant, Environment $environment = null)
+    public function __construct(Merchant $merchant, Environment $environment = null, Client $client = null)
     {
         if ($environment == null) {
             $environment = Environment::production();
@@ -37,6 +51,7 @@ class Braspag
 
         $this->merchant = $merchant;
         $this->environment = $environment;
+        $this->client = $client;
     }
 
     /**
@@ -127,5 +142,58 @@ class Braspag
         $updateSaleRequest->setServiceTaxAmount($serviceTaxAmount);
 
         return $updateSaleRequest->execute($paymentId);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function getAccessTokenFraudAnalysis()
+    {
+        if (!$this->client) {
+            throw new \Exception('No client credentials were informed');
+        }
+        $accessTokenRequest = new FraudAnalysisTokenRequest($this->client, $this->environment, $this->merchant);
+
+        return $accessTokenRequest->execute([
+            'scope' => 'AntifraudGatewayApp',
+            'grant_type' => 'client_credentials'
+        ]);
+    }
+
+    /**
+     * @param $accessToken
+     * @param Analysis $analysisRequest
+     * @return |null
+     * @throws \Exception
+     */
+    public function analyseTransaction($accessToken, Analysis $analysisRequest) : AnalysisResponse
+    {
+        if (!$this->client) {
+            throw new \Exception('No client credentials were informed');
+        }
+        $fraudAnalysisRequest = new FraudAnalysisRequest($this->client, $this->environment, $this->merchant);
+
+        $fraudAnalysisRequest->setAccessToken($accessToken);
+
+        return $fraudAnalysisRequest->execute($analysisRequest);
+    }
+
+    /**
+     * @param $accessToken
+     * @param $analysisId
+     * @return Analysis
+     * @throws \Exception
+     */
+    public function getFraudAnalysis($accessToken, $analysisId)
+    {
+        if (!$this->client) {
+            throw new \Exception('No client credentials were informed');
+        }
+
+        $fraudAnalysis = new QueryFraudAnalysis($this->client, $this->environment, $this->merchant);
+
+        $fraudAnalysis->setAccessToken($accessToken);
+
+        return $fraudAnalysis->execute($analysisId);
     }
 }
